@@ -12,6 +12,68 @@ const game = {
     difficulty: 1
 };
 
+// Audio context for sound effects
+let audioContext = null;
+
+// Initialize audio context (requires user interaction)
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+// Play happy sound for collecting stars (8-bit power-up sound)
+function playHappySound() {
+    if (!audioContext) return;
+
+    const now = audioContext.currentTime;
+
+    // Create oscillator for the main tone
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // 8-bit style rising tone
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(400, now);
+    oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0.3, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.15);
+}
+
+// Play sad sound for getting hit by bombs (8-bit explosion sound)
+function playSadSound() {
+    if (!audioContext) return;
+
+    const now = audioContext.currentTime;
+
+    // Create oscillator for explosion effect
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    // 8-bit style descending tone (explosion)
+    oscillator.type = 'sawtooth';
+    oscillator.frequency.setValueAtTime(200, now);
+    oscillator.frequency.exponentialRampToValueAtTime(50, now + 0.2);
+
+    // Volume envelope
+    gainNode.gain.setValueAtTime(0.4, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+
+    oscillator.start(now);
+    oscillator.stop(now + 0.2);
+}
+
 // DOM elements
 const gameArea = document.getElementById('gameArea');
 const player = document.getElementById('player');
@@ -119,6 +181,9 @@ function updateObjects() {
                 game.score += 10;
                 scoreEl.textContent = game.score;
 
+                // Play happy sound
+                playHappySound();
+
                 // Increase difficulty every 50 points
                 if (game.score % 50 === 0) {
                     game.difficulty += 0.5;
@@ -126,6 +191,9 @@ function updateObjects() {
             } else {
                 game.lives--;
                 livesEl.textContent = game.lives;
+
+                // Play sad sound
+                playSadSound();
 
                 // Add shake effect
                 player.style.animation = 'shake 0.3s';
@@ -162,6 +230,9 @@ function gameLoopFn() {
 // Start game
 function startGame() {
     if (game.isRunning) return;
+
+    // Initialize audio context (requires user interaction)
+    initAudio();
 
     game.isRunning = true;
     game.isPaused = false;
