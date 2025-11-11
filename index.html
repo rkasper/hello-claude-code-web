@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Falling Objects Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>Falling Objects Game</h1>
+            <div class="stats">
+                <div class="score">Score: <span id="score">0</span></div>
+                <div class="lives">Lives: <span id="lives">3</span></div>
+            </div>
+        </div>
+
+        <div id="gameArea" class="game-area">
+            <div id="player" class="player"></div>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn">Start Game</button>
+            <button id="pauseBtn" class="btn" disabled>Pause</button>
+            <button id="restartBtn" class="btn">Restart</button>
+        </div>
+
+        <div class="instructions">
+            <h3>How to Play:</h3>
+            <p>Use <strong>← →</strong> arrow keys or <strong>A D</strong> keys to move</p>
+            <p>Catch the <span class="good-item">green objects</span> (+10 points)</p>
+            <p>Avoid the <span class="bad-item">red objects</span> (-1 life)</p>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
