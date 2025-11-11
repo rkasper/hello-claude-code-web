@@ -12,13 +12,77 @@ const game = {
     difficulty: 1
 };
 
-// Audio context for sound effects
+// Audio context for sound effects and music
 let audioContext = null;
+let musicGainNode = null;
+let isMusicPlaying = false;
+let musicTimeoutId = null;
 
 // Initialize audio context (requires user interaction)
 function initAudio() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        musicGainNode = audioContext.createGain();
+        musicGainNode.gain.setValueAtTime(0.15, audioContext.currentTime); // Lower volume for background
+        musicGainNode.connect(audioContext.destination);
+    }
+}
+
+// 8-bit background music - simple upbeat melody
+function playBackgroundMusic() {
+    if (!audioContext || !musicGainNode) return;
+
+    isMusicPlaying = true;
+
+    // Simple melody pattern (frequencies in Hz)
+    const melody = [
+        { note: 523.25, duration: 0.2 },  // C5
+        { note: 659.25, duration: 0.2 },  // E5
+        { note: 783.99, duration: 0.2 },  // G5
+        { note: 659.25, duration: 0.2 },  // E5
+        { note: 698.46, duration: 0.2 },  // F5
+        { note: 783.99, duration: 0.2 },  // G5
+        { note: 880.00, duration: 0.2 },  // A5
+        { note: 783.99, duration: 0.2 },  // G5
+    ];
+
+    let startTime = audioContext.currentTime;
+
+    melody.forEach((tone, index) => {
+        const noteStartTime = startTime + (index * 0.25);
+
+        const oscillator = audioContext.createOscillator();
+        oscillator.type = 'square'; // 8-bit sound
+        oscillator.frequency.setValueAtTime(tone.note, noteStartTime);
+
+        const noteGain = audioContext.createGain();
+        noteGain.gain.setValueAtTime(0, noteStartTime);
+        noteGain.gain.linearRampToValueAtTime(1, noteStartTime + 0.01);
+        noteGain.gain.setValueAtTime(1, noteStartTime + tone.duration - 0.05);
+        noteGain.gain.linearRampToValueAtTime(0, noteStartTime + tone.duration);
+
+        oscillator.connect(noteGain);
+        noteGain.connect(musicGainNode);
+
+        oscillator.start(noteStartTime);
+        oscillator.stop(noteStartTime + tone.duration);
+    });
+
+    // Loop the music
+    const totalDuration = melody.length * 0.25 * 1000; // Convert to milliseconds
+    musicTimeoutId = setTimeout(() => {
+        if (isMusicPlaying && game.isRunning && !game.isPaused) {
+            playBackgroundMusic();
+        }
+    }, totalDuration);
+}
+
+// Stop background music
+function stopBackgroundMusic() {
+    isMusicPlaying = false;
+    if (musicTimeoutId) {
+        clearTimeout(musicTimeoutId);
+        musicTimeoutId = null;
     }
 }
 
@@ -259,6 +323,9 @@ function startGame() {
     // Start spawning objects
     game.spawnInterval = setInterval(spawnObject, 1000);
 
+    // Start background music
+    playBackgroundMusic();
+
     // Start game loop
     gameLoopFn();
 }
@@ -270,7 +337,10 @@ function pauseGame() {
     game.isPaused = !game.isPaused;
     pauseBtn.textContent = game.isPaused ? 'Resume' : 'Pause';
 
-    if (!game.isPaused) {
+    if (game.isPaused) {
+        stopBackgroundMusic();
+    } else {
+        playBackgroundMusic();
         gameLoopFn();
     }
 }
@@ -283,6 +353,7 @@ function restartGame() {
 
     clearInterval(game.spawnInterval);
     cancelAnimationFrame(game.gameLoop);
+    stopBackgroundMusic();
 
     // Clear objects
     game.objects.forEach(obj => obj.remove());
@@ -311,6 +382,7 @@ function gameOver() {
     game.isRunning = false;
     clearInterval(game.spawnInterval);
     cancelAnimationFrame(game.gameLoop);
+    stopBackgroundMusic();
 
     const gameOverDiv = document.createElement('div');
     gameOverDiv.className = 'game-over';
